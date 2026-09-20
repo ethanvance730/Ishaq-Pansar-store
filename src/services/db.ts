@@ -58,6 +58,16 @@ export async function initializeDatabaseIfEmpty(): Promise<void> {
 
       await batch.commit();
       console.log('Firestore seed completed successfully.');
+    } else {
+      // If products exist, check if general settings exist or need updating
+      const settingsRef = doc(db, SETTINGS_COLLECTION, 'general');
+      const settingsSnap = await getDoc(settingsRef);
+      if (!settingsSnap.exists()) {
+        await setDoc(settingsRef, {
+          ...INITIAL_STORE_SETTINGS,
+          updatedAt: serverTimestamp()
+        });
+      }
     }
   } catch (error) {
     console.warn('Database initialization check error (fallback will use local data if network/rules restricted):', error);

@@ -19,7 +19,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onNavigateToShop
           The Ishaq Pansar Heritage
         </h1>
         <p className="text-sm sm:text-base text-stone-600 leading-relaxed">
-          Founded in Lahore&apos;s historic pansari bazaar, Ishaq Pansar Store was established with a singular mission: to resurrect pure, unadulterated botanical wellness in an era of chemical substitutes.
+          Rooted in Punjab&apos;s rich herbal heritage, Ishaq Pansar Store was established with a singular mission: to resurrect pure, unadulterated botanical wellness in an era of chemical substitutes.
         </p>
       </div>
 
@@ -62,7 +62,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ settings, onNavigateToShop
           <div className="space-y-4">
             <h2 className="text-2xl font-serif font-bold text-white">Visit Our Physical Apothecary</h2>
             <p className="text-xs text-stone-300 leading-relaxed">
-              Step into our store in Lahore to experience authentic sensory pansari culture — burlap sacks of golden roots, amber jars of raw Sidr honey, and centuries-old herbal guidance.
+              Step into our apothecary in Dunga Bunga to experience authentic sensory pansari culture — burlap sacks of golden roots, amber jars of raw Sidr honey, and centuries-old herbal guidance.
             </p>
             <div className="space-y-2 text-xs text-emerald-100 pt-2">
               <p className="flex items-center gap-2">

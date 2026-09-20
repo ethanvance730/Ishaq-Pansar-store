@@ -448,11 +448,11 @@ export const INITIAL_PRODUCTS: Product[] = [
 export const INITIAL_STORE_SETTINGS: StoreSettings = {
   storeName: 'Ishaq Pansar Store',
   tagline: 'Authentic Traditional Pakistani Herbs & Pure Natural Remedies',
-  phone: '+92 300 1234567',
-  whatsapp: '+92 300 1234567',
-  email: 'support@ishaqpansar.pk',
-  address: 'Shop # 14-18, Pansari Market, Bano Bazaar, Lahore, Pakistan',
-  city: 'Lahore',
+  phone: '+923157919074',
+  whatsapp: '+923157919074',
+  email: 'ethanvance730@gmail.com',
+  address: 'Main Bazaar, Dunga Bunga, Punjab, Pakistan',
+  city: 'Dunga Bunga',
   standardShippingRate: 200,
   freeShippingThreshold: 2500,
   announcementText: '🌿 Free Nationwide Cash on Delivery on Orders Above Rs. 2,500! 100% Pure & Lab Tested Herbs.',
@@ -460,12 +460,15 @@ export const INITIAL_STORE_SETTINGS: StoreSettings = {
 };
 
 export const PAKISTAN_CITIES = [
+  'Dunga Bunga',
+  'Bahawalnagar',
   'Lahore',
   'Karachi',
   'Islamabad',
   'Rawalpindi',
   'Faisalabad',
   'Multan',
+  'Bahawalpur',
   'Peshawar',
   'Quetta',
   'Sialkot',
