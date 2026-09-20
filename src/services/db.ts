@@ -13,9 +13,56 @@ import {
   serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { Product, Category, Order, StoreSettings, ProductVariation } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_STORE_SETTINGS } from '../data/initialData';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 const PRODUCTS_COLLECTION = 'products';
 const CATEGORIES_COLLECTION = 'categories';
@@ -109,8 +156,8 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 export async function saveProduct(product: Partial<Product> & { id?: string }): Promise<string> {
+  const id = product.id || (product.slug ? product.slug : `prod-${Date.now()}`);
   try {
-    const id = product.id || (product.slug ? product.slug : `prod-${Date.now()}`);
     const docRef = doc(db, PRODUCTS_COLLECTION, id);
     const dataToSave = {
       ...product,
@@ -123,8 +170,7 @@ export async function saveProduct(product: Partial<Product> & { id?: string }): 
     await setDoc(docRef, dataToSave, { merge: true });
     return id;
   } catch (err) {
-    console.error('Error saving product in Firestore:', err);
-    throw err;
+    handleFirestoreError(err, OperationType.WRITE, `${PRODUCTS_COLLECTION}/${id}`);
   }
 }
 
@@ -132,8 +178,7 @@ export async function deleteProduct(productId: string): Promise<void> {
   try {
     await deleteDoc(doc(db, PRODUCTS_COLLECTION, productId));
   } catch (err) {
-    console.error('Error deleting product:', err);
-    throw err;
+    handleFirestoreError(err, OperationType.DELETE, `${PRODUCTS_COLLECTION}/${productId}`);
   }
 }
 
@@ -252,11 +297,15 @@ export async function getOrders(): Promise<Order[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
-  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
-  await updateDoc(orderRef, {
-    status,
-    updatedAt: serverTimestamp()
-  });
+  try {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    await updateDoc(orderRef, {
+      status,
+      updatedAt: serverTimestamp()
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `${ORDERS_COLLECTION}/${orderId}`);
+  }
 }
 
 // STORE SETTINGS
@@ -275,9 +324,13 @@ export async function getStoreSettings(): Promise<StoreSettings> {
 }
 
 export async function updateStoreSettings(settings: Partial<StoreSettings>): Promise<void> {
-  const docRef = doc(db, SETTINGS_COLLECTION, 'general');
-  await setDoc(docRef, {
-    ...settings,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, 'general');
+    await setDoc(docRef, {
+      ...settings,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${SETTINGS_COLLECTION}/general`);
+  }
 }

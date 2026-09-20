@@ -21,7 +21,8 @@ import {
   Tag,
   Lock,
   KeyRound,
-  ShieldAlert
+  ShieldAlert,
+  AlertCircle
 } from 'lucide-react';
 import { Product, Order, Category, StoreSettings, OrderStatus, ProductVariation } from '../types';
 import { formatPKR } from '../utils/format';
@@ -70,6 +71,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Settings form state
   const [settingsForm, setSettingsForm] = useState<StoreSettings>(settings);
   const [settingsSavedMessage, setSettingsSavedMessage] = useState(false);
+  const [settingsErrorMessage, setSettingsErrorMessage] = useState('');
 
   React.useEffect(() => {
     setSettingsForm(settings);
@@ -82,11 +84,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoggingIn) return;
+
     setAuthError('');
     setIsLoggingIn(true);
 
-    const trimmedEmail = adminUsername.trim().toLowerCase();
-    const trimmedPass = adminPassword.trim();
+    const trimmedEmail = (adminUsername || '').trim().toLowerCase();
+    const trimmedPass = (adminPassword || '').trim();
 
     // Verify authorized admin email and password
     const isAuthorizedEmail = trimmedEmail === 'ethanvance730@gmail.com';
@@ -99,25 +103,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     }
 
     if (!isAuthorizedPassword) {
-      setAuthError('Invalid administrator password. Please enter the correct password.');
+      setAuthError('Invalid administrator password. Please check your password and try again.');
       setIsLoggingIn(false);
       return;
     }
 
     try {
-      // Attempt Firebase auth or fallback to secure verified session
+      // If Firebase Auth account exists, sign in; otherwise authorize verified admin session directly
       try {
         await loginAdmin(trimmedEmail, trimmedPass);
       } catch (fbErr) {
-        // If user hasn't registered this email in Firebase Auth console yet, allow authorized store credentials
-        console.info('Firebase auth fallback to verified local admin credentials');
+        console.info('Using verified local administrator session credential.');
       }
 
       setIsAuthenticated(true);
       sessionStorage.setItem('ishaq_admin_authenticated', 'true');
       setAdminPassword('');
+      setAuthError('');
     } catch (err: any) {
-      setAuthError(err?.message || 'Authentication error. Please check your credentials.');
+      setAuthError(err?.message || 'Authentication error. Please try again.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -250,15 +254,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   // SETTINGS ACTION
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSettingsErrorMessage('');
+    setSettingsSavedMessage(false);
+    setIsSavingSettings(true);
     try {
       await updateStoreSettings(settingsForm);
       setSettingsSavedMessage(true);
-      setTimeout(() => setSettingsSavedMessage(false), 3000);
+      setTimeout(() => setSettingsSavedMessage(false), 4000);
       await onRefreshData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update settings:', err);
+      let msg = 'Failed to update settings.';
+      try {
+        const parsed = JSON.parse(err?.message || '');
+        if (parsed?.error) msg = parsed.error;
+      } catch {
+        if (err?.message) msg = err.message;
+      }
+      setSettingsErrorMessage(msg);
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -299,7 +317,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   required
                   placeholder="admin@ishaqpansar.pk"
                   value={adminUsername}
-                  onChange={(e) => setAdminUsername(e.target.value)}
+                  onChange={(e) => {
+                    setAdminUsername(e.target.value);
+                    if (authError) setAuthError('');
+                  }}
                   className="w-full px-3.5 py-2.5 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#1C3F2B] focus:border-transparent outline-none transition-all"
                 />
               </div>
@@ -317,7 +338,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   required
                   placeholder="Enter administrator password"
                   value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onChange={(e) => {
+                    setAdminPassword(e.target.value);
+                    if (authError) setAuthError('');
+                  }}
                   className="w-full pl-3.5 pr-10 py-2.5 text-xs border border-stone-300 rounded-xl focus:ring-2 focus:ring-[#1C3F2B] focus:border-transparent outline-none transition-all"
                 />
                 <button
@@ -798,6 +822,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
             )}
 
+            {settingsErrorMessage && (
+              <div className="mb-6 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
+                <span>{settingsErrorMessage}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSaveSettings} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -870,10 +901,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-[#1C3F2B] text-white text-xs font-bold rounded-xl hover:bg-[#28573C] flex items-center gap-2"
+                  disabled={isSavingSettings}
+                  className="px-6 py-2.5 bg-[#1C3F2B] disabled:opacity-60 text-white text-xs font-bold rounded-xl hover:bg-[#28573C] flex items-center gap-2 transition-all cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4 text-amber-300" />
-                  <span>Save Storefront Settings</span>
+                  <span>{isSavingSettings ? 'Saving Settings...' : 'Save Storefront Settings'}</span>
                 </button>
               </div>
             </form>
