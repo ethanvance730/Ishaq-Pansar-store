@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products and Categories are publicly readable; write requires admin auth or authenticated
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // Store settings are publicly readable, admin write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // Orders can be created by any customer (for COD checkout), read/update only by authenticated admin
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
